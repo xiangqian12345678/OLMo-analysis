@@ -59,3 +59,7 @@ site/
 /scratch/
 core
 /dataset-cache/
+
+
+# 输出
+output/
