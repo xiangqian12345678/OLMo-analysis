@@ -155,8 +155,8 @@ def build_config(opts: argparse.Namespace, overrides: List[str]) -> ExperimentCo
         seed=34521,
 
         # DataLoader worker 数量：
-        # 小模型 + numpy dataset 通常不需要太多
-        num_workers=4,
+        # 单 GPU + 22GB RAM：减少 worker 数以降低内存占用
+        num_workers=1,
     )
 
     # =========================
@@ -166,8 +166,8 @@ def build_config(opts: argparse.Namespace, overrides: List[str]) -> ExperimentCo
     train_module_config = TransformerTrainModuleConfig(
         # 每张 GPU 的 micro-batch（token 数）
         # 单 GPU 训练: 减小 batch size 以适应 16GB 显存
-        # 原 8192 tokens,改为 2048 tokens (约 8MB + 开销)
-        rank_microbatch_size=2048,
+        # 原 8192 tokens,改为 1024 tokens (约 4MB + 开销)
+        rank_microbatch_size=1024,
 
         # 模型允许的最大输入长度
         max_sequence_length=sequence_length,
@@ -204,7 +204,7 @@ def build_config(opts: argparse.Namespace, overrides: List[str]) -> ExperimentCo
         # 使用 torch.compile：
         # - 对长时间预训练收益明显
         # - 首次 compile 会慢一些
-        compile_model=True,
+        compile_model=False,
 
         # -------- 并行训练配置 --------
         dp_config=TransformerDataParallelConfig(
@@ -258,8 +258,8 @@ def build_config(opts: argparse.Namespace, overrides: List[str]) -> ExperimentCo
 
             # 硬停止步数（调试 / 小规模实验常用）
             # 测试环境：100 步验证流程可行
-            # 生产环境：恢复为 95,000
-            hard_stop=Duration.steps(int(95_000))
+            # 单 GPU 长期训练：设置为完整训练步数
+            hard_stop=Duration.steps(int(190_000))
         )
 
         # -------- 回调：运行时补丁 --------
@@ -367,15 +367,128 @@ def build_config(opts: argparse.Namespace, overrides: List[str]) -> ExperimentCo
     # 汇总 ExperimentConfig
     # =========================
 
+    # =========================
+    # 汇总 ExperimentConfig
+    # =========================
+
     return ExperimentConfig(
+        # =========================
+        # 1. 模型配置
+        # =========================
         model=model_config,
+        # 包含内容（来自第106-114行）：
+        # - 模型架构：OLMo-3-190M（190M参数）
+        # - 词表大小：tokenizer_config.padded_vocab_size()
+        # - 注意力后端：FlashAttention-2（加速长序列计算）
+        # - 其他架构参数：层数、隐藏层维度、头数等由 olmo3_190M() 默认设定
+
+        # =========================
+        # 2. 数据集配置
+        # =========================
         dataset=dataset_config,
+        # 包含内容（来自第122-143行）：
+        # - 数据混合源：DataMix.v3_small_ppl_validation（测试用小规模验证集）
+        # - 分词器：tokenizer_config（Dolma2官方分词器）
+        # - 数据根目录：opts.data_root（预处理后的numpy/token文件路径）
+        # - 序列长度：sequence_length=2048（默认值）
+        # - 最大目标序列长度：max(8192, sequence_length)=8192
+        # - 工作目录：opts.work_dir（缓存数据索引、临时文件）
+
+        # =========================
+        # 3. 数据加载器配置
+        # =========================
         data_loader=data_loader_config,
+        # 包含内容（来自第149-160行）：
+        # - 全局批次大小：global_batch_size=262,144 tokens
+        #   - 单GPU时每step需要256个micro-steps累积
+        # - 随机种子：seed=34521（确保多卡/多次训练可复现）
+        # - DataLoader worker数：num_workers=4（数据预加载进程数）
+        # - 实际单GPU batch_size = global_batch_size / world_size
+
+        # =========================
+        # 4. 训练模块配置
+        # =========================
         train_module=train_module_config,
+        # 包含内容（来自第166-258行）：
+        #
+        # -------- 单GPU微批次 --------
+        # rank_microbatch_size=1024 tokens
+        #   - 每次前向/反向传播处理的token数
+        #   - 适应16GB显存的调整（原8192→1024）
+        #
+        # -------- 优化器 --------
+        # optim=SkipStepAdamWConfig：
+        #   - 学习率：lr=5e-4（小模型使用更高LR）
+        #   - 权重衰减：weight_decay=0.1
+        #   - Adam动量：betas=(0.9, 0.95)
+        #   - 参数分组：embedding层不做weight_decay
+        #
+        # -------- 学习率调度 --------
+        # scheduler=CosWithWarmup：
+        #   - warmup步数：warmup_steps=1000
+        #   - 主调度：余弦退火
+        #
+        # -------- 编译优化 --------
+        # compile_model=False（torch.compile，默认关闭）
+        #
+        # -------- 并行训练 --------
+        # dp_config=TransformerDataParallelConfig：
+        #   - 并行策略：HSDP（Hybrid Sharded Data Parallel）
+        #   - 参数dtype：bfloat16（节省显存）
+        #   - 梯度归约dtype：float32（数值稳定性）
+        #   - FSDP包裹粒度：按Transformer block为单位
+        #
+        # -------- 其他配置 --------
+        # - Float8训练：disabled=False（未启用）
+        # - Z-loss：1e-4（防止softmax logits爆炸）
+        # - 梯度裁剪：max_grad_norm=1.0
+
+        # =========================
+        # 5. Trainer配置
+        # =========================
         trainer=trainer_config,
-    ).merge(overrides)  # 合并 CLI 覆盖参数
+        # 包含内容（来自第262-286行）：
+        #
+        # -------- 基础训练设置 --------
+        # - 保存路径：opts.save_folder
+        # - 允许覆盖：save_overwrite=True
+        # - 指标收集频率：metrics_collect_interval=10 steps
+        # - 训练取消检查：cancel_check_interval=10 steps
+        # - 最大训练时长：max_duration=50B tokens（长期预训练目标）
+        # - 硬停止步数：hard_stop=100 steps（测试用，生产环境95,000）
+        #
+        # -------- 回调函数 --------
+        # 1. MonkeyPatcherCallback：运行时补丁
+        # 2. CheckpointerCallback：每1000步保存checkpoint
+        # 3. CometCallback：Comet日志（默认禁用）
+        # 4. WandBCallback：WandB日志（默认禁用）
+        # 5. ConfigSaverCallback：保存配置文件
+        # 6. LMEvaluatorCallbackConfig：每5000步困惑度评估
+        # 7. DownstreamEvaluatorCallbackConfig：每5000步下游任务评估
+        #    - 包含多个任务：ARC、HellaSwag、MMLU、技能评估等
+
+    ).merge(overrides)  # =========================
+    # 合并 CLI 覆盖参数
+    # =========================
+    # 作用：
+    # 1. 允许用户通过命令行参数覆盖配置
+    #    示例：--train_module.optim.lr=1e-3
+    #          --trainer.save_folder=/new/path
+    #
+    # 2. overrides 格式：List[str]（键值对列表）
+    #    通常由 CLI 解析器自动生成
+    #
+    # 3. 合并逻辑：
+    #    - 深度合并：支持嵌套配置（如 train_module.optim.lr）
+    #    - 优先级：CLI overrides > 代码默认值
+    #    - 不存在的键会报错（配置验证）
+    #
+    # 4. 典型使用场景：
+    #    - 快速超参调优（不改代码直接试参）
+    #    - 路径覆盖（数据/输出目录）
+    #    - 调试开关（如启用Float8、compile_model）
 
 
 if __name__ == "__main__":
-    # 入口：调用 main 函数启动训练
+    # build_config 是作为函数对象传递给 main 函数的，而不是直接执行它
     main(build_config)

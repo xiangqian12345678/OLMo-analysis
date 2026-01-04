@@ -134,6 +134,12 @@ FAST_TASKS = [
 ]
 
 
+# 任务组字典，将任务集名称映射到对应的任务列表
+# 可用的任务集包括：
+# - full__small_compute: 小规模计算任务集，适用于不需要获得 MC（多选）能力的训练（如 1B-5xC、短时 7B 训练）
+# - full__large_compute: 大规模计算任务集，适用于期望模型获得 MC 能力的训练
+# - full: 完整任务集，包含所有可用任务的并集
+# - fast: 快速任务集，约为 full 任务集的 1/2 到 1/3 大小，用于快速评估
 TASK_GROUPS: Dict[str, List[str]] = {
     "full__small_compute": FULL_TASKS_SMALL_COMPUTE,
     "full__large_compute": FULL_TASKS_LARGE_COMPUTE,

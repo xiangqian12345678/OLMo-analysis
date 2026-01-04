@@ -58,8 +58,8 @@ def split_batch(batch: Dict[str, Any], num_microbatch_instances: int) -> List[Di
             elif isinstance(value, list):
                 micro_batches[key] = [
                     value[
-                        num_microbatch_instances * i : num_microbatch_instances * i
-                        + num_microbatch_instances
+                    num_microbatch_instances * i: num_microbatch_instances * i
+                                                  + num_microbatch_instances
                     ]
                     for i in range(math.ceil(batch_size / num_microbatch_instances))
                 ]
@@ -106,7 +106,7 @@ def melt_batch(batch: Dict[str, Any], target_sequence_length: int) -> Dict[str, 
                     if len(item) != current_sequence_length:
                         raise RuntimeError(f"unexpected item length for '{key}' in batch")
                     for i in range(ratio):
-                        new_batch[key].append(item[i * ratio : i * ratio + target_sequence_length])
+                        new_batch[key].append(item[i * ratio: i * ratio + target_sequence_length])
                 else:
                     for _ in range(ratio):
                         new_batch[key].append(item)
@@ -168,13 +168,13 @@ def write_document_indices(data_path: Path, *, dtype, eos_token_id: int) -> Path
 
 
 def iter_document_indices(
-    data_path: PathOrStr,
-    *,
-    local_cache: Optional[PathOrStr] = None,
-    use_array_if_local: Optional[bool] = None,
-    eos_token_id: Optional[int] = None,
-    bos_token_id: Optional[int] = None,
-    dtype=None,
+        data_path: PathOrStr,
+        *,
+        local_cache: Optional[PathOrStr] = None,
+        use_array_if_local: Optional[bool] = None,
+        eos_token_id: Optional[int] = None,
+        bos_token_id: Optional[int] = None,
+        dtype=None,
 ) -> Generator[Tuple[int, int], None, None]:
     """
     Given a ".npy" data path from the Dolma toolkit, get the list of document start/end indices within
@@ -251,27 +251,27 @@ def iter_document_indices(
 
 
 def iter_document_indices_with_max_sequence_length(
-    data_path: PathOrStr,
-    max_sequence_length: int,
-    *,
-    local_cache: Optional[PathOrStr] = None,
-    use_array_if_local: Optional[bool] = None,
-    eos_token_id: Optional[int] = None,
-    bos_token_id: Optional[int] = None,
-    dtype=None,
-    long_doc_strategy: LongDocStrategy = LongDocStrategy.truncate,
+        data_path: PathOrStr,
+        max_sequence_length: int,
+        *,
+        local_cache: Optional[PathOrStr] = None,
+        use_array_if_local: Optional[bool] = None,
+        eos_token_id: Optional[int] = None,
+        bos_token_id: Optional[int] = None,
+        dtype=None,
+        long_doc_strategy: LongDocStrategy = LongDocStrategy.truncate,
 ) -> Generator[Tuple[int, int], None, None]:
     """
     Like :func:`iter_document_indices` but will either truncate or split documents that are
     longer than ``max_sequence_length``.
     """
     for start_idx, end_idx in iter_document_indices(
-        data_path,
-        local_cache=local_cache,
-        use_array_if_local=use_array_if_local,
-        eos_token_id=eos_token_id,
-        bos_token_id=bos_token_id,
-        dtype=dtype,
+            data_path,
+            local_cache=local_cache,
+            use_array_if_local=use_array_if_local,
+            eos_token_id=eos_token_id,
+            bos_token_id=bos_token_id,
+            dtype=dtype,
     ):
         if end_idx - start_idx > max_sequence_length:
             if long_doc_strategy == LongDocStrategy.truncate:
@@ -286,7 +286,7 @@ def iter_document_indices_with_max_sequence_length(
 
 
 def get_document_indices(
-    data_path: PathOrStr, local_cache: Optional[PathOrStr] = None
+        data_path: PathOrStr, local_cache: Optional[PathOrStr] = None
 ) -> List[Tuple[int, int]]:
     """
     Like :func:`iter_document_indices` but returns a list.
@@ -295,10 +295,10 @@ def get_document_indices(
 
 
 def load_array_slice(
-    path: PathOrStr,
-    start_idx: int,
-    end_idx: int,
-    dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64], Type[np.bool_]],
+        path: PathOrStr,
+        start_idx: int,
+        end_idx: int,
+        dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64], Type[np.bool_]],
 ) -> np.ndarray:
     """
     Load a slice from a numpy array on disk.
@@ -316,10 +316,10 @@ def load_array_slice(
 
 
 def load_array_slice_into_tensor(
-    path: PathOrStr,
-    start_idx: int,
-    end_idx: int,
-    dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64], Type[np.bool_]],
+        path: PathOrStr,
+        start_idx: int,
+        end_idx: int,
+        dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64], Type[np.bool_]],
 ) -> torch.Tensor:
     """
     Read a chunk from a numpy array, returning the chunk as a :class:`torch.Tensor`.
@@ -337,9 +337,9 @@ def load_array_slice_into_tensor(
 
 
 def get_document_lengths(
-    input_ids: Union[torch.Tensor, np.ndarray],
-    eos_token_id: int,
-    bos_token_id: Optional[int] = None,
+        input_ids: Union[torch.Tensor, np.ndarray],
+        eos_token_id: int,
+        bos_token_id: Optional[int] = None,
 ) -> torch.Tensor:
     """
     Get the length of documents.
@@ -393,7 +393,7 @@ def get_cumulative_document_lengths(doc_lens: torch.Tensor) -> torch.Tensor:
 
 
 def iter_batched(
-    iterable: Iterable[Dict[str, Any]], batch_num_tokens: int
+        iterable: Iterable[Dict[str, Any]], batch_num_tokens: int
 ) -> Iterable[Tuple[Dict[str, Any], ...]]:
     batch: List[Dict[str, Any]] = []
     tokens = 0
@@ -423,10 +423,10 @@ def iter_batched(
 
 @contextmanager
 def memmap_to_write(
-    path: Path,
-    *,
-    shape: Tuple[int, ...],
-    dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64], Type[np.bool_]],
+        path: Path,
+        *,
+        shape: Tuple[int, ...],
+        dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64], Type[np.bool_]],
 ) -> Generator[np.ndarray, None, None]:
     """
     A context manager for safely writing a numpy memory-mapped array to disk.
@@ -436,7 +436,7 @@ def memmap_to_write(
     path.parent.mkdir(exist_ok=True, parents=True)
     # NOTE: we use 'random.SystemRandom' here to minimize the probability of collisions in temp
     # filenames from different runs using the same seed and working directory.
-    tmp_path = path.with_suffix(f".{random.SystemRandom().randint(0, 2**32)}.npy.tmp")
+    tmp_path = path.with_suffix(f".{random.SystemRandom().randint(0, 2 ** 32)}.npy.tmp")
     mmap = np.memmap(tmp_path, dtype=dtype, mode="w+", shape=shape)
     try:
         yield mmap
@@ -460,9 +460,9 @@ def write_array_to_disk(arr: np.ndarray, path: Path):
     Write a numpy array to disk in the same simple format that ``np.memmap`` uses.
     """
     with memmap_to_write(
-        path,
-        dtype=arr.dtype,
-        shape=arr.shape,
+            path,
+            dtype=arr.dtype,
+            shape=arr.shape,
     ) as mmap:
         mmap[:] = arr
 
@@ -482,7 +482,7 @@ def chunk_array(arr: np.ndarray, chunk_sizes: Sequence[int]) -> List[np.ndarray]
     offset = 0
     chunks = []
     for n in chunk_sizes:
-        chunks.append(arr[offset : offset + n])
+        chunks.append(arr[offset: offset + n])
         offset += n
     return chunks
 
@@ -492,15 +492,15 @@ def get_rng(seed: int) -> np.random.Generator:
 
 
 def bucket_documents(
-    path: PathOrStr,
-    target: Path,
-    *,
-    buckets: Sequence[int],
-    eos_token_id: int,
-    dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]],
-    indices_dtype: Union[
-        Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]
-    ] = np.uint32,
+        path: PathOrStr,
+        target: Path,
+        *,
+        buckets: Sequence[int],
+        eos_token_id: int,
+        dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]],
+        indices_dtype: Union[
+            Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]
+        ] = np.uint32,
 ) -> Tuple[int, int]:
     """
     Bucket documents by sequence lengths in powers of 2. Saving the indices of the bucketed
@@ -533,17 +533,17 @@ def bucket_documents(
 
 
 def segment_documents_into_instances(
-    path: PathOrStr,
-    target: Path,
-    *,
-    max_sequence_length: int,
-    eos_token_id: int,
-    dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]],
-    indices_dtype: Union[
-        Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]
-    ] = np.uint32,
-    bos_token_id: Optional[int] = None,
-    sample: Optional[Tuple[int, int]] = None,
+        path: PathOrStr,
+        target: Path,
+        *,
+        max_sequence_length: int,
+        eos_token_id: int,
+        dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]],
+        indices_dtype: Union[
+            Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]
+        ] = np.uint32,
+        bos_token_id: Optional[int] = None,
+        sample: Optional[Tuple[int, int]] = None,
 ) -> Tuple[int, int]:
     """
     Segment documents into instances of at most ``sequence_length`` tokens.
@@ -557,8 +557,8 @@ def segment_documents_into_instances(
     idx_gen = (
         idx
         for start_idx, end_idx in iter_document_indices(
-            path, eos_token_id=eos_token_id, bos_token_id=bos_token_id, dtype=dtype
-        )
+        path, eos_token_id=eos_token_id, bos_token_id=bos_token_id, dtype=dtype
+    )
         for idx in (start_idx, start_idx + min(end_idx - start_idx, max_sequence_length))
     )
     indices = np.fromiter(idx_gen, dtype=indices_dtype)
@@ -588,20 +588,71 @@ def get_doc_lengths_from_indices(doc_indices: np.ndarray) -> np.ndarray:
 
 
 def get_labels(batch: Dict[str, Any], label_ignore_index: int = -100) -> torch.Tensor:
-    # Labels are just input IDs shifted to the left (first item is ignored).
+    """
+    从批次数据中生成用于训练的标签。
+
+    对于语言模型训练，标签通常是输入序列向左移动一位（next token prediction），
+    第一个位置的标签会被忽略，因为不存在"前一个token"可以预测。
+
+    参数:
+        batch: 批次数据字典，包含 input_ids、label_mask、attention_mask、instance_mask 等
+        label_ignore_index: 要忽略的标签索引，默认为 -100（PyTorch 的标准忽略索引）
+
+    返回:
+        处理后的标签张量，形状与 input_ids 相同
+    """
+    # 克隆 input_ids 作为初始标签
     labels, label_mask, attention_mask, instance_mask = (
         batch["input_ids"].clone(),
         batch.get("label_mask"),
         batch.get("attention_mask"),
         batch.get("instance_mask"),
     )
+
+    # 如果存在 label_mask，将不需要预测的位置标记为忽略索引
+    # label_mask 中 True 表示需要预测，False 表示需要忽略
     if label_mask is not None:
         labels.masked_fill_(~label_mask, label_ignore_index)
+
+    # 如果存在 attention_mask，将被 padding 的位置（attention_mask == 0）标记为忽略索引
+    # attention_mask 中 1 表示真实 token，0 表示 padding
     if attention_mask is not None:
         labels.masked_fill_(attention_mask == 0.0, label_ignore_index)
+
+    # 如果存在 instance_mask（用于某些特定场景如文档边界），将不需要的实例位置标记为忽略索引
+    # instance_mask 通常用于标识哪些位置属于当前实例
     if instance_mask is not None:
+        '''
+        1.unsqueeze(-1) 会在最后一个维度前插入一个新维度
+        2.~instance_mask.unsqueeze(-1) （取反）
+        3.labels 的形状是 (batch_size, seq_len) ，掩码的形状是 (batch_size, 1) 。PyTorch 会自动进行广播
+        4.在掩码为 True 的位置填入 label_ignore_index
+            labels = torch.tensor([[1, 2, 3, 4],
+                           [5, 6, 7, 8],
+                           [9, 10, 11, 12]])
+            instance_mask = torch.tensor([True, False, True])
+            label_ignore_index = -100
+            
+            # 执行后
+            labels.masked_fill_(~instance_mask.unsqueeze(-1), value=label_ignore_index)
+            
+            # labels 变为：
+            # tensor([[  1,   2,   3,   4],
+            #         [-100, -100, -100, -100],  # 整个第2行被mask掉
+            #         [  9,  10,  11,  12]])
+        '''
         labels.masked_fill_(~instance_mask.unsqueeze(-1), value=label_ignore_index)
-    # Shift and pad.
+
+    '''
+    将标签向左移动一位（预测下一个token）
+    在右侧补一个 token，填充为忽略索引
+    形状从 (batch_size, seq_len) 保持不变
+    (0, 1, 0, 0) 的效果：
+        pad_left=0 : 左侧（列方向左边）不填充
+        pad_right=1 : 右侧（列方向右边）填充 1 个值
+        pad_top=0 : 顶部（行方向上边）不填充
+        pad_bottom=0 : 底部（行方向下边）不填充
+    '''
     return F.pad(labels[..., 1:], (0, 1, 0, 0), value=label_ignore_index)
 
 
@@ -640,7 +691,7 @@ class RepetitionTuple(NamedTuple):
 
 
 def find_periodic_sequences(
-    arr: np.ndarray, max_period: int, min_period: int = 1, mask_value: int = -1
+        arr: np.ndarray, max_period: int, min_period: int = 1, mask_value: int = -1
 ) -> Generator[RepetitionTuple, None, None]:
     """Function to find periodic sequences in an array.
 
@@ -855,7 +906,7 @@ class InstancePacker:
         return bin_id
 
     def pack_documents(
-        self, document_indices: np.ndarray
+            self, document_indices: np.ndarray
     ) -> Tuple[List[List[int]], np.ndarray, int]:
         if self.instance_bins or self.space_to_bins:
             raise RuntimeError(
@@ -883,15 +934,15 @@ class InstancePacker:
 
 
 def pack_documents_into_instances(
-    *paths: PathOrStr,
-    max_sequence_length: int,
-    eos_token_id: int,
-    dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]],
-    bos_token_id: Optional[int] = None,
-    indices_dtype: Union[
-        Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]
-    ] = np.uint64,
-    long_doc_strategy: LongDocStrategy = LongDocStrategy.truncate,
+        *paths: PathOrStr,
+        max_sequence_length: int,
+        eos_token_id: int,
+        dtype: Union[Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]],
+        bos_token_id: Optional[int] = None,
+        indices_dtype: Union[
+            Type[np.uint8], Type[np.uint16], Type[np.uint32], Type[np.uint64]
+        ] = np.uint64,
+        long_doc_strategy: LongDocStrategy = LongDocStrategy.truncate,
 ) -> Tuple[List[List[int]], np.ndarray, int]:
     """
     Pack document from source files into instances of at most ``max_sequence_length`` using
@@ -922,12 +973,12 @@ def pack_documents_into_instances(
         start_offset = 0
         for path in paths:
             for start_idx, end_idx in iter_document_indices_with_max_sequence_length(
-                path,
-                max_sequence_length,
-                eos_token_id=eos_token_id,
-                bos_token_id=bos_token_id,
-                dtype=dtype,
-                long_doc_strategy=long_doc_strategy,
+                    path,
+                    max_sequence_length,
+                    eos_token_id=eos_token_id,
+                    bos_token_id=bos_token_id,
+                    dtype=dtype,
+                    long_doc_strategy=long_doc_strategy,
             ):
                 yield start_offset + start_idx
                 yield start_offset + end_idx
@@ -942,7 +993,7 @@ def pack_documents_into_instances(
 
 
 def attention_mask_to_cache_leftpad(
-    attention_mask: torch.Tensor,
+        attention_mask: torch.Tensor,
 ) -> torch.Tensor:
     """Convert a left-padding attention mask into a cache leftpad for Flash-Attention.
 

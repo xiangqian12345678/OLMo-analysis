@@ -92,14 +92,30 @@ class Duration:
 
     def due(self, *, step: int, tokens: int, epoch: int) -> bool:
         """
-        Check if the duration is due.
+        检查是否达到预定的持续时间/阈值
+        参数:
+            step: 当前训练步数（training steps）
+            tokens: 当前处理的 token 总数
+            epoch: 当前训练轮数（epochs）
+        返回:
+            bool: True 表示已达到阈值，False 表示未达到
+        注意:
+            使用关键字参数（*）强制调用者明确指定参数名
         """
+        # 如果单位是步数，检查当前步数是否达到目标值
         if self.unit == DurationUnit.steps:
             return step >= self.value
+
+        # 如果单位是 token 数，检查当前 token 总数是否达到目标值
         elif self.unit == DurationUnit.tokens:
             return tokens >= self.value
+
+        # 如果单位是轮数，检查当前轮数是否超过目标值
+        # 注意: 这里用 > 而不是 >=，表示在完成该轮数后才算达到
         elif self.unit == DurationUnit.epochs:
             return epoch > self.value
+
+        # 未知单位类型
         else:
             raise NotImplementedError
 

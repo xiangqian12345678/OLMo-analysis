@@ -167,10 +167,20 @@ def load_state_dict(
     :param process_group: The process group to use for distributed collectives.
     :param thread_count: Set the number of threads used for certain operations.
     """
+    # 标准化路径格式，确保路径格式一致
     dir = normalize_path(dir)
+    # 创建远程文件系统读取器，用于从本地或远程存储读取checkpoint
+    # - thread_count: 设置读取时的线程数
+    # - pre_download: 是否预先下载远程checkpoint到本地缓存
+    # - work_dir: 用于缓存文件的本地工作目录
     reader = RemoteFileSystemReader(
         dir, thread_count=thread_count, pre_download=pre_download, work_dir=work_dir
     )
+    # 使用torch.distributed.checkpoint的load函数加载checkpoint
+    # - state_dict: 要加载到的状态字典（会被就地修改）
+    # - checkpoint_id: checkpoint的路径/URL标识
+    # - storage_reader: 自定义的存储读取器，支持远程文件系统
+    # - process_group: 用于分布式通信的进程组
     dist_cp.load(
         state_dict,
         checkpoint_id=dir,
